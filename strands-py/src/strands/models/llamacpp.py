@@ -387,8 +387,8 @@ class LlamaCppModel(Model):
                 "content": formatted_contents,
                 **({} if not formatted_tool_calls else {"tool_calls": formatted_tool_calls}),
             }
-            formatted_messages.append(formatted_message)
             formatted_messages.extend(formatted_tool_messages)
+            formatted_messages.append(formatted_message)
 
         return [message for message in formatted_messages if message["content"] or "tool_calls" in message]
 

@@ -244,6 +244,32 @@ def test_format_request_with_tool_result(model, model_id):
     assert tru_request == exp_request
 
 
+def test_format_request_tool_results_precede_user_content_in_same_turn(model):
+    """Regression test for https://github.com/strands-agents/harness-sdk/issues/5150."""
+    messages = [
+        {"role": "assistant", "content": [{"toolUse": {"toolUseId": "calc_123", "name": "calc", "input": {}}}]},
+        {
+            "role": "user",
+            "content": [
+                {"toolResult": {"toolUseId": "calc_123", "status": "success", "content": [{"text": "4"}]}},
+                {"text": "<memory>prefers celsius</memory>"},
+            ],
+        },
+    ]
+
+    tru_messages = model.format_request(messages)["messages"]
+    exp_messages = [
+        {
+            "role": "assistant",
+            "content": "",
+            "tool_calls": [{"function": {"arguments": "{}", "name": "calc"}, "id": "calc_123"}],
+        },
+        {"role": "tool", "tool_call_id": "calc_123", "content": [{"text": "4", "type": "text"}]},
+        {"role": "user", "content": [{"text": "<memory>prefers celsius</memory>", "type": "text"}]},
+    ]
+    assert tru_messages == exp_messages
+
+
 def test_format_request_with_tool_use(model, model_id):
     messages = [
         {

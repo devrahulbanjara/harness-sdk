@@ -231,6 +231,33 @@ def test_format_tool_message_preserves_non_ascii() -> None:
     assert tru_result == exp_result
 
 
+def test_format_messages_tool_results_precede_user_content_in_same_turn() -> None:
+    """Regression test for https://github.com/strands-agents/harness-sdk/issues/5150."""
+    model = LlamaCppModel()
+    messages = [
+        {"role": "assistant", "content": [{"toolUse": {"toolUseId": "calc_123", "name": "calc", "input": {}}}]},
+        {
+            "role": "user",
+            "content": [
+                {"toolResult": {"toolUseId": "calc_123", "status": "success", "content": [{"text": "4"}]}},
+                {"text": "<memory>prefers celsius</memory>"},
+            ],
+        },
+    ]
+
+    tru_messages = model._format_messages(messages)
+    exp_messages = [
+        {
+            "role": "assistant",
+            "content": [],
+            "tool_calls": [{"function": {"arguments": "{}", "name": "calc"}, "id": "calc_123", "type": "function"}],
+        },
+        {"role": "tool", "tool_call_id": "calc_123", "content": [{"text": "4", "type": "text"}]},
+        {"role": "user", "content": [{"text": "<memory>prefers celsius</memory>", "type": "text"}]},
+    ]
+    assert tru_messages == exp_messages
+
+
 def test_format_request_with_tools() -> None:
     """Test request formatting with tool specifications."""
     model = LlamaCppModel()
